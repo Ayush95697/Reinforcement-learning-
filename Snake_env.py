@@ -36,6 +36,65 @@ class SnakeEnv(gym.Env):
                                             shape=(N_CHANNELS, HEIGHT, WIDTH), dtype=np.uint8)
 
     def step(self, action):
+        cv2.imshow('a', self.img)
+        cv2.waitKey(1)
+        self.img = np.zeros((500, 500, 3), dtype='uint8')
+        # Display Apple
+        cv2.rectangle(self.img, (self.apple_position[0], self.apple_position[1]), (self.apple_position[0] + 10, self.apple_position[1] + 10),
+                      (0, 0, 255), 3)
+        # Display Snake
+        for position in self.snake_position:
+            cv2.rectangle(self.img, (position[0], position[1]), (position[0] + 10, position[1] + 10), (0, 255, 0), 3)
+
+        # Takes step after fixed time
+        t_end = time.time() + 0.05
+        k = -1
+        while time.time() < t_end:
+            if k == -1:
+                k = cv2.waitKey(1)
+            else:
+                continue
+
+        # Change the head position based on the button direction
+        if action == 1:
+            self.snake_head[0] += 10
+        elif action == 0:
+            self.snake_head[0] -= 10
+        elif action == 2:
+            self.snake_head[1] += 10
+        elif action == 3:
+            self.snake_head[1] -= 10
+
+        # Increase Snake length on eating apple
+        if self.snake_head == self.apple_position:
+            self.apple_position, self.score = collision_with_apple(self.apple_position, self.score)
+            self.snake_position.insert(0, list(self.snake_head))
+
+        else:
+            self.snake_position.insert(0, list(self.snake_head))
+            self.snake_position.pop()
+
+        # On collision kill the snake and print the score
+        if collision_with_boundaries(self.snake_head) == 1 or collision_with_self(self.snake_position) == 1:
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            self.img = np.zeros((500, 500, 3), dtype='uint8')
+            cv2.putText(self.img, 'Your Score is {}'.format(self.score), (140, 250), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+            cv2.imshow('a', self.img)
+            self.done=True
+
+
+        head_x = self.snake_head[0]
+        head_y = self.snake_head[1]
+
+        apple_delta_x = head_x - self.apple_position[0]
+        apple_delta_y = head_y - self.apple_position[1]
+        snake_length=len(self.snake_position)
+
+        self.prev_action = deque(maxlen=SNAKE_LEN_GOAL)
+
+        for _ in in range(SNAKE_LEN_GOAL):
+            self.prev_action(-1)
+        self.observation=[head_x, head_y, apple_delta_x, apple_delta_y, snake_length] + list(self.prev_action)
 
 
 
